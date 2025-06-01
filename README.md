@@ -2,7 +2,6 @@
 A simple spinning wheel for giveaways made through twitch.
 
 How it works:
-
 Viewers type in Twitch chat: !giveaway John, and "John" gets added to the sidebar participants list.
 The wheel updates with slices representing each participant’s name.
 Press the 'Spin' button to spin the wheel.
