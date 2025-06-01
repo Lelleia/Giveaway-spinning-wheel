@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Spinning Wheel Giveaway</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@600&display=swap" rel="stylesheet">
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background-color: #1f1f1f;
+      font-family: Arial, sans-serif;
+      color: white;
+      height: 100vh;
+      display: flex;
+    }
+
+    .main-layout {
+      display: flex;
+      width: 100%;
+      height: 100vh;
+    }
+
+    .center-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    h1 {
+      position: absolute;
+      top: 10px;
+      left: 780px;
+      transform: translateX(-50%);
+      font-size: 72px;
+      color: #d1be0fd8;
+      text-shadow: 2px 2px #000;
+      font-family: Verdana, Geneva, Tahoma, sans-serif;
+      text-align: center;
+      margin: 40px;
+      z-index: 10;
+    }
+
+    h2 {
+      position: absolute;
+      top: 85px;
+      left: 780px;
+      transform: translateX(-50%);
+      font-size: 32px;
+      color: #d1be0fd8;
+      text-shadow: 2px 2px #000;
+      font-family: Verdana, Geneva, Tahoma, sans-serif;
+      text-align: center;
+      margin: 40px;
+      z-index: 10;
+    }
+
+    h3 {
+      position: absolute;
+      top: 130px;
+      left: 780px;
+      transform: translateX(-50%);
+      font-size: 18px;
+      color: #d1be0fd8;
+      text-shadow: 2px 2px #000;
+      font-family: Verdana, Geneva, Tahoma, sans-serif;
+      text-align: center;
+      margin: 40px;
+      z-index: 10;
+    }
+
+    #wheel-wrapper {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 300px;
+      height: 300px;
+    }
+
+    #wheel-spinner {
+      width: 100%;
+      height: 100%;
+      transition: transform 4s cubic-bezier(0.33, 1, 0.68, 1);
+    }
+
+    .wheel {
+      width: 100%;
+      height: 100%;
+      border: 5px solid #131313;
+      border-radius: 50%;
+      background: #333;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .pin {
+      position: absolute;
+      top: 50%;
+      left: 52%;
+      transform: translate(-50%, -50%) rotate(90deg); /* Rotate pin to point right */
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      z-index: 20;
+      filter: drop-shadow(0 0 2px #000);
+      pointer-events: none;
+    }
+
+    .pin .head {
+      width: 0;
+      height: 0;
+      border-left: 10px solid transparent;
+      border-right: 10px solid transparent;
+      border-bottom: 14px solid #181818;
+      margin-bottom: -2px;
+    }
+
+    .pin .shaft {
+      width: 5px;
+      height: 50px;
+      background-color: #181818;
+      border-radius: 1px;
+    }
+
+    .spin-btn {
+      margin-top: 370px;
+      padding: 10px 20px;
+      font-size: 18px;
+      cursor: pointer;
+      border: none;
+      background-color: #444444;
+      color: white;
+      border-radius: 5px;
+      transition: background-color 0.3s ease;
+    }
+
+    .spin-btn:hover {
+      background-color: #202020;
+    }
+
+    .right-panel {
+      width: 300px;
+      background-color: #292929;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 20px;
+      height: 100vh;
+      overflow-y: auto;
+    }
+
+    .right-text {
+      font-size: 22px;
+      color: #c9c9c7;
+      text-align: center;
+      word-break: break-word;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>GIVEAWAY!</h1>
+  <h2>BlackCell Pass</h2>
+  <h3>Last standing participant wins</h3>
+
+  <div class="main-layout">
+    <div class="center-content">
+      <!-- Centered pin pointing to the right -->
+      <div class="pin">
+        <div class="head"></div>
+        <div class="shaft"></div>
+      </div>
+
+      <!-- Wheel wrapper -->
+      <div id="wheel-wrapper">
+        <div id="wheel-spinner">
+          <div class="wheel" id="wheel"></div>
+        </div>
+      </div>
+
+      <button class="spin-btn" onclick="spin()">Spin</button>
+    </div>
+
+    <div class="right-panel">
+      <div class="right-text">Participants</div>
+      <!-- Names will be appended here -->
+    </div>
+  </div>
+
+  <!-- Load tmi.js -->
+  <script src="https://cdn.jsdelivr.net/npm/tmi.js@1.8.5/dist/tmi.min.js"></script>
+
+  <script>
+    // Connect to Twitch chat
+    const client = new tmi.Client({
+      channels: ['nuussen'] // Replace with your channel name in lowercase
+    });
+
+    client.connect();
+
+    // Keep track of participants (unique names)
+    const participants = new Set();
+
+    client.on('message', (channel, tags, message, self) => {
+      if (self) return; // Ignore messages from the bot itself
+
+      const trimmedMsg = message.trim();
+
+      // Look for !giveaway command with a name
+      if (trimmedMsg.toLowerCase().startsWith('!giveaway ')) {
+        const name = trimmedMsg.slice(10).trim();
+        if (name && !participants.has(name)) {
+          participants.add(name);
+          addParticipantToSidebar(name);
+          updateWheel();
+        }
+      }
+    });
+
+    // Add participant name to the right panel
+    function addParticipantToSidebar(name) {
+      const div = document.createElement('div');
+      div.textContent = name;
+      div.style.marginTop = '10px';
+      div.style.color = '#f1f1f1';
+      document.querySelector('.right-panel').appendChild(div);
+    }
+
+    // Update the wheel to show participants as slices with labels
+    function updateWheel() {
+      const names = Array.from(participants);
+      const canvasSize = 300;
+      const canvas = document.createElement('canvas');
+      canvas.width = canvasSize;
+      canvas.height = canvasSize;
+      const ctx = canvas.getContext('2d');
+      const radius = canvasSize / 2;
+      const anglePerSlice = (2 * Math.PI) / names.length;
+
+      // Clear canvas before drawing
+      ctx.clearRect(0, 0, canvasSize, canvasSize);
+
+      for (let i = 0; i < names.length; i++) {
+        const startAngle = i * anglePerSlice;
+        const endAngle = startAngle + anglePerSlice;
+
+        // Draw slice
+        ctx.beginPath();
+        ctx.moveTo(radius, radius);
+        ctx.arc(radius, radius, radius - 5, startAngle, endAngle);
+        ctx.closePath();
+
+        // Use a nice color for each slice
+        ctx.fillStyle = `hsl(${(i * 360 / names.length)}, 70%, 60%)`;
+        ctx.fill();
+
+        // Draw text label
+        ctx.save();
+        ctx.translate(radius, radius);
+        ctx.rotate(startAngle + anglePerSlice / 2);
+
+        ctx.textAlign = "right";
+        ctx.fillStyle = "#000";
+        ctx.font = "bold 14px Arial";
+        ctx.fillText(names[i], radius - 20, 5);
+
+        ctx.restore();
+      }
+
+      // Replace existing wheel content with new canvas
+      const wheel = document.getElementById('wheel');
+      wheel.innerHTML = ''; // Clear old content
+      wheel.appendChild(canvas);
+    }
+
+    // Spin function
+    let currentRotation = 0;
+    function spin() {
+      if (participants.size === 0) {
+        alert("No participants yet!");
+        return;
+      }
+      const spinDegrees = 360 * 5 + Math.floor(Math.random() * 360);
+      currentRotation += spinDegrees;
+      document.getElementById('wheel-spinner').style.transform = `rotate(${currentRotation}deg)`;
+    }
+  </script>
+
+</body>
+</html>
